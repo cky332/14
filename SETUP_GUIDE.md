@@ -167,7 +167,7 @@ pip install datasets==2.18.0
 pip install Pillow==10.3.0 albumentations==1.4.3 scikit-image kornia==0.6.4
 
 # 安装科学计算库
-pip install numpy==1.24.4 scipy==1.13.0
+pip install numpy==1.24.4 scipy==1.10.1
 
 # 安装加密库 (ChaCha20 支持)
 pip install pycryptodome==3.20.0
@@ -199,7 +199,8 @@ conda activate gs
 | 依赖包 | 说明 |
 |--------|------|
 | `clip==0.2.0` | 项目已自带 `open_clip/` 目录，无需额外安装 CLIP 包 |
-| `skimage==0.0` | 这是旧的包名，实际应安装 `scikit-image` |
+| `skimage==0.0` | 这是旧的包名，已改为 `scikit-image` |
+| `scipy==1.13.0` | 原版本要求 Python >= 3.9，已降级为 `1.10.1`（Python 3.8 兼容） |
 | `horovod==0.28.1` | 分布式训练框架，单机运行时**不需要安装**，安装较复杂 |
 
 ---
