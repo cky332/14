@@ -142,7 +142,7 @@ pip install Pillow==10.3.0 albumentations==1.4.3 scikit-image kornia==0.6.4
 
 # 数学和科学计算
 info "安装科学计算库..."
-pip install numpy==1.24.4 scipy==1.13.0
+pip install numpy==1.24.4 scipy==1.10.1
 
 # 加密库
 info "安装加密库..."
