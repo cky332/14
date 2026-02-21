@@ -1,5 +1,5 @@
 import torch
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from typing import Any, Mapping
 import json
 import numpy as np
@@ -23,8 +23,18 @@ def get_dataset(args):
             dataset = dataset['annotations']
             prompt_key = 'caption'
     else:
-        dataset = load_dataset(args.dataset_path)['train']
-        prompt_key = 'Prompt'
+        if os.path.isdir(args.dataset_path):
+            dataset = load_from_disk(args.dataset_path)['train']
+        else:
+            dataset = load_dataset(args.dataset_path)['train']
+        if 'Prompt' in dataset.column_names:
+            prompt_key = 'Prompt'
+        elif 'prompt' in dataset.column_names:
+            prompt_key = 'prompt'
+        elif 'text' in dataset.column_names:
+            prompt_key = 'text'
+        else:
+            raise KeyError(f"Cannot find prompt column. Available columns: {dataset.column_names}")
     return dataset, prompt_key
 
 
