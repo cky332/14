@@ -27,7 +27,14 @@ def get_dataset(args):
             dataset = load_from_disk(args.dataset_path)['train']
         else:
             dataset = load_dataset(args.dataset_path)['train']
-        prompt_key = 'Prompt'
+        if 'Prompt' in dataset.column_names:
+            prompt_key = 'Prompt'
+        elif 'prompt' in dataset.column_names:
+            prompt_key = 'prompt'
+        elif 'text' in dataset.column_names:
+            prompt_key = 'text'
+        else:
+            raise KeyError(f"Cannot find prompt column. Available columns: {dataset.column_names}")
     return dataset, prompt_key
 
 
