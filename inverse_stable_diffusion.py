@@ -91,6 +91,12 @@ class InversableStableDiffusionPipeline(ModifiedStableDiffusionPipeline):
         text_embeddings = self.text_encoder(text_input_ids.to(self.device))[0]
         return text_embeddings
     
+    @property
+    def vae_scaling_factor(self):
+        if hasattr(self.vae, 'config') and hasattr(self.vae.config, 'scaling_factor'):
+            return self.vae.config.scaling_factor
+        return 0.18215
+
     @torch.inference_mode()
     def get_image_latents(self, image, sample=True, rng_generator=None):
         encoding_dist = self.vae.encode(image).latent_dist
@@ -98,7 +104,7 @@ class InversableStableDiffusionPipeline(ModifiedStableDiffusionPipeline):
             encoding = encoding_dist.sample(generator=rng_generator)
         else:
             encoding = encoding_dist.mode()
-        latents = encoding * 0.18215
+        latents = encoding * self.vae_scaling_factor
         return latents
 
 
@@ -191,7 +197,7 @@ class InversableStableDiffusionPipeline(ModifiedStableDiffusionPipeline):
     
     @torch.inference_mode()
     def decode_image(self, latents: torch.FloatTensor, **kwargs):
-        scaled_latents = 1 / 0.18215 * latents
+        scaled_latents = 1 / self.vae_scaling_factor * latents
         image = [
             self.vae.decode(scaled_latents[i : i + 1]).sample for i in range(len(latents))
         ]

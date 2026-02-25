@@ -14,14 +14,25 @@ def set_random_seed(seed=0):
     random.seed(seed + 5)
 
 
-def transform_img(image, target_size=512):
-    tform = transforms.Compose(
-        [
-            transforms.Resize(target_size),
-            transforms.CenterCrop(target_size),
-            transforms.ToTensor(),
-        ]
-    )
+def transform_img(image, target_size=512, target_width=None):
+    """Transform image to tensor, supporting non-square dimensions."""
+    if target_width is None:
+        target_width = target_size
+    if target_size == target_width:
+        tform = transforms.Compose(
+            [
+                transforms.Resize(target_size),
+                transforms.CenterCrop(target_size),
+                transforms.ToTensor(),
+            ]
+        )
+    else:
+        tform = transforms.Compose(
+            [
+                transforms.Resize((target_size, target_width)),
+                transforms.ToTensor(),
+            ]
+        )
     image = tform(image)
     return 2.0 * image - 1.0
 
@@ -33,7 +44,61 @@ def latents_to_imgs(pipe, latents):
     return x
 
 
-def image_distortion(img,seed, args):
+def create_random_mask(height, width, mask_ratio, seed=0):
+    """Create a random rectangular mask for inpainting tests."""
+    np.random.seed(seed + 100)
+    mask = np.zeros((height, width), dtype=np.float32)
+    # Calculate mask area
+    mask_area = int(height * width * mask_ratio)
+    mask_h = int(np.sqrt(mask_area * height / width))
+    mask_w = int(mask_area / mask_h) if mask_h > 0 else width
+    mask_h = min(mask_h, height)
+    mask_w = min(mask_w, width)
+    # Random position
+    start_y = np.random.randint(0, max(height - mask_h, 1))
+    start_x = np.random.randint(0, max(width - mask_w, 1))
+    mask[start_y:start_y + mask_h, start_x:start_x + mask_w] = 1.0
+    return mask
+
+
+def regeneration_attack(img, pipe, device, strength=0.5, prompt='',
+                        num_inference_steps=50):
+    """Regeneration attack: re-generate the image through the same or different model.
+    This simulates an attacker using img2img to remove watermarks while preserving content."""
+    # Encode the image to latent space
+    img_tensor = transform_img(img).unsqueeze(0).to(torch.float16).to(device)
+    latents = pipe.get_image_latents(img_tensor, sample=False)
+
+    # Add noise to latents based on strength
+    pipe.scheduler.set_timesteps(num_inference_steps)
+    timesteps = pipe.scheduler.timesteps
+
+    start_step = int(num_inference_steps * (1 - strength))
+    if start_step < len(timesteps):
+        t = timesteps[start_step]
+        alpha_prod_t = pipe.scheduler.alphas_cumprod[t]
+        noise = torch.randn_like(latents)
+        noisy_latents = (alpha_prod_t ** 0.5) * latents + ((1 - alpha_prod_t) ** 0.5) * noise
+    else:
+        noisy_latents = latents
+
+    # Get text embedding for the prompt
+    text_embeddings = pipe.get_text_embedding(prompt)
+
+    # Denoise to generate new image
+    outputs = pipe(
+        prompt,
+        num_images_per_prompt=1,
+        guidance_scale=7.5,
+        num_inference_steps=num_inference_steps,
+        height=img_tensor.shape[2],
+        width=img_tensor.shape[3],
+        latents=noisy_latents,
+    )
+    return outputs.images[0]
+
+
+def image_distortion(img, seed, args):
 
     if args.jpeg_ratio is not None:
         img.save(f"tmp_{args.jpeg_ratio}.jpg", quality=args.jpeg_ratio)
@@ -95,6 +160,20 @@ def image_distortion(img,seed, args):
 
     if args.brightness_factor is not None:
         img = transforms.ColorJitter(brightness=args.brightness_factor)(img)
+
+    # New distortion types
+    if hasattr(args, 'webp_quality') and args.webp_quality is not None:
+        import io
+        buffer = io.BytesIO()
+        img.save(buffer, format='WebP', quality=args.webp_quality)
+        buffer.seek(0)
+        img = Image.open(buffer).convert('RGB')
+
+    if hasattr(args, 'rotation_angle') and args.rotation_angle is not None:
+        img = img.rotate(args.rotation_angle, resample=Image.BILINEAR, expand=False, fillcolor=(0, 0, 0))
+
+    if hasattr(args, 'color_jitter_saturation') and args.color_jitter_saturation is not None:
+        img = transforms.ColorJitter(saturation=args.color_jitter_saturation)(img)
 
     return img
 
