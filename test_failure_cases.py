@@ -97,10 +97,15 @@ def parse_metrics(output):
 
 def get_common_args(args):
     """Get common arguments for all experiments."""
+    # Use the local cache path if it exists, otherwise original dataset_path
+    local_cache = os.path.join('.cache_datasets', args.dataset_path.replace('/', '_'))
+    dataset_arg = local_cache if os.path.isdir(local_cache) else args.dataset_path
+
     base = [
         '--num', str(args.num),
         '--model_path', args.model_path,
         '--output_path', args.output_path,
+        '--dataset_path', dataset_arg,
         '--chacha',
     ]
     if args.revision:
@@ -122,6 +127,7 @@ def test_few_steps(args):
     experiments = []
     base = get_common_args(args)
 
+    # Note: DPMSolver requires at least 2 steps; use DDIM for 1-step test
     step_counts = [1, 2, 4, 8, 10, 25, 50]
 
     for steps in step_counts:
@@ -131,6 +137,9 @@ def test_few_steps(args):
             '--num_inference_steps', str(steps),
             '--num_inversion_steps', str(steps),
         ]
+        # DPMSolver crashes with 1 step; use DDIM instead
+        if steps == 1:
+            cmd += ['--scheduler', 'ddim']
         experiments.append((name, cmd))
 
         # Test with fixed 50-step inversion (mismatched)
@@ -140,6 +149,8 @@ def test_few_steps(args):
                 '--num_inference_steps', str(steps),
                 '--num_inversion_steps', '50',
             ]
+            if steps == 1:
+                cmd += ['--scheduler', 'ddim']
             experiments.append((name, cmd))
 
     return experiments
@@ -400,7 +411,28 @@ def main():
     parser.add_argument('--dry_run', action='store_true',
                         help='Print commands without executing')
 
+    parser.add_argument('--dataset_path', default='Gustavosta/Stable-Diffusion-Prompts',
+                        help='Dataset path (will be pre-cached before experiments)')
+
     args = parser.parse_args()
+
+    # Pre-download and cache the dataset before running experiments
+    # This avoids each subprocess independently downloading the dataset
+    print("[INFO] Pre-caching dataset to avoid repeated downloads...")
+    local_cache = os.path.join('.cache_datasets', args.dataset_path.replace('/', '_'))
+    if not os.path.isdir(local_cache):
+        try:
+            from datasets import load_dataset
+            print(f"[INFO] Downloading dataset: {args.dataset_path}")
+            dataset = load_dataset(args.dataset_path)['train']
+            os.makedirs(os.path.dirname(local_cache), exist_ok=True)
+            dataset.save_to_disk(local_cache)
+            print(f"[INFO] Dataset cached to: {local_cache}")
+        except Exception as e:
+            print(f"[WARN] Failed to pre-cache dataset: {e}")
+            print("[WARN] Experiments will attempt to download individually")
+    else:
+        print(f"[INFO] Dataset already cached at: {local_cache}")
 
     # Create results directory
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
