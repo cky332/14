@@ -159,7 +159,7 @@ conda activate gs
 
 # 安装核心依赖（排除 torch 和 torchvision，因为已经安装了）
 pip install diffusers==0.11.1
-pip install transformers==4.34.0
+pip install transformers==4.38.2
 pip install huggingface_hub==0.22.2
 pip install datasets==2.18.0
 

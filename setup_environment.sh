@@ -130,7 +130,7 @@ info "第五步: 安装核心依赖包..."
 
 # Diffusion 模型相关
 info "安装 Diffusers 和 Transformers..."
-pip install diffusers==0.11.1 transformers==4.34.0
+pip install diffusers==0.11.1 transformers==4.38.2
 
 # HuggingFace 相关
 info "安装 HuggingFace 组件..."

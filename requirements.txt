@@ -25,5 +25,5 @@ timm==0.5.4
 torch==1.13.0
 torchvision==0.14.0
 tqdm==4.66.2
-transformers==4.34.0
+transformers==4.38.2
 typing_extensions==4.11.0
