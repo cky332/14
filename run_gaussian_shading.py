@@ -18,11 +18,15 @@ from watermark import *
 def main(args):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     scheduler = DPMSolverMultistepScheduler.from_pretrained(args.model_path, subfolder='scheduler')
+    from_pretrained_kwargs = dict(
+        scheduler=scheduler,
+        torch_dtype=torch.float16,
+    )
+    if args.revision:
+        from_pretrained_kwargs['revision'] = args.revision
     pipe = InversableStableDiffusionPipeline.from_pretrained(
             args.model_path,
-            scheduler=scheduler,
-            torch_dtype=torch.float16,
-            revision='fp16',
+            **from_pretrained_kwargs,
     )
     pipe.safety_checker = None
     pipe = pipe.to(device)
@@ -125,6 +129,7 @@ if __name__ == '__main__':
     parser.add_argument('--reference_model_pretrain', default=None)
     parser.add_argument('--dataset_path', default='Gustavosta/Stable-Diffusion-Prompts')
     parser.add_argument('--model_path', default='stabilityai/stable-diffusion-2-1-base')
+    parser.add_argument('--revision', default=None, help='model revision (e.g. fp16). Default: None (main branch)')
 
     # for image distortion
     parser.add_argument('--jpeg_ratio', default=None, type=int)

@@ -17,11 +17,15 @@ def main(args):
     # load diffusion model
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     scheduler = DPMSolverMultistepScheduler.from_pretrained(args.model_path, subfolder='scheduler')
+    from_pretrained_kwargs = dict(
+        scheduler=scheduler,
+        torch_dtype=torch.float16,
+    )
+    if args.revision:
+        from_pretrained_kwargs['revision'] = args.revision
     pipe = InversableStableDiffusionPipeline.from_pretrained(
             args.model_path,
-            scheduler=scheduler,
-            torch_dtype=torch.float16,
-            revision='fp16',
+            **from_pretrained_kwargs,
     )
     pipe.safety_checker = None
     pipe = pipe.to(device)
@@ -95,6 +99,7 @@ if __name__ == '__main__':
     parser.add_argument('--gt_folder', default='./fid_outputs/coco/ground_truth')
     parser.add_argument('--output_path', default='./output/')
     parser.add_argument('--model_path', default='stabilityai/stable-diffusion-2-1-base')
+    parser.add_argument('--revision', default=None, help='model revision (e.g. fp16). Default: None (main branch)')
     parser.add_argument('--chacha', action='store_true', help='chacha20 for cipher')
 
     args = parser.parse_args()

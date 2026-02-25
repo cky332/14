@@ -412,16 +412,36 @@ pip install pycryptodome==3.20.0
 - 使用 `torch.float16` 精度（代码已默认使用）
 - 减少 batch size
 
-### Q6: HuggingFace 下载模型超时
+### Q6: HuggingFace 下载模型超时或返回 404
+
+**症状**: `RepositoryNotFoundError: 404 Client Error` 或下载超时
+
+**原因**: HuggingFace 官方站点网络不通，或镜像站未同步该模型。
 
 ```bash
-# 方法 1: 使用镜像
+# 方法 1: 使用镜像 (推荐中国大陆用户)
 export HF_ENDPOINT=https://hf-mirror.com
 
-# 方法 2: 使用代理
+# 方法 2: 使用 ModelScope 镜像 (如果 hf-mirror 404)
+pip install modelscope
+python -c "
+from modelscope.hub.snapshot_download import snapshot_download
+snapshot_download('AI-ModelScope/stable-diffusion-2-1-base', cache_dir='./models')
+"
+python run_gaussian_shading.py --model_path ./models/AI-ModelScope/stable-diffusion-2-1-base ...
+
+# 方法 3: 使用代理直连 HuggingFace 官方
+unset HF_ENDPOINT
 export https_proxy=http://your-proxy:port
 export http_proxy=http://your-proxy:port
+
+# 方法 4: 手动下载到本地再加载
+huggingface-cli download stabilityai/stable-diffusion-2-1-base \
+    --local-dir ./models/stable-diffusion-2-1-base
+python run_gaussian_shading.py --model_path ./models/stable-diffusion-2-1-base ...
 ```
+
+> **注意**: 如果镜像站报 404 但官方可访问，请先运行 `unset HF_ENDPOINT` 取消镜像设置。
 
 ### Q7: `horovod` 安装失败
 
