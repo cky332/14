@@ -13,6 +13,7 @@ dependencies:
     - torchvision==0.14.0
     - diffusers==0.11.1
     - transformers==4.38.2
+    - accelerate==0.25.0
     - pytorch_lightning==2.2.1
     - huggingface_hub==0.22.2
     - datasets==2.18.0

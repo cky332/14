@@ -1,3 +1,4 @@
+accelerate==0.25.0
 academictorrents==2.3.3
 albumentations==1.4.3
 clip==0.2.0

@@ -148,6 +148,10 @@ pip install numpy==1.24.4 scipy==1.10.1
 info "安装加密库..."
 pip install pycryptodome==3.20.0
 
+# 模型加载加速
+info "安装 accelerate..."
+pip install accelerate==0.25.0
+
 # 其他依赖
 info "安装其他依赖..."
 pip install \
