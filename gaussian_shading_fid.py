@@ -13,9 +13,32 @@ from image_utils import *
 from pytorch_fid.fid_score import *
 
 
+def resolve_model_path(model_path):
+    """Resolve model path: if it's a local directory, validate it exists;
+    if it's a HF repo ID, try to find it in local cache to avoid network issues."""
+    if os.path.isdir(model_path):
+        return model_path
+    # Try to resolve from HuggingFace cache
+    try:
+        from huggingface_hub import scan_cache_dir
+        cache_info = scan_cache_dir()
+        for repo in cache_info.repos:
+            if repo.repo_id == model_path:
+                # Return the latest snapshot path
+                revisions = sorted(repo.revisions, key=lambda r: r.last_modified, reverse=True)
+                if revisions:
+                    snapshot_path = str(revisions[0].snapshot_path)
+                    print(f"[INFO] Found cached model: {snapshot_path}")
+                    return snapshot_path
+    except Exception:
+        pass
+    return model_path
+
+
 def main(args):
     # load diffusion model
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    args.model_path = resolve_model_path(args.model_path)
     scheduler = DPMSolverMultistepScheduler.from_pretrained(args.model_path, subfolder='scheduler')
     from_pretrained_kwargs = dict(
         scheduler=scheduler,
