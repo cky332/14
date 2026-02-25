@@ -26,7 +26,21 @@ def get_dataset(args):
         if os.path.isdir(args.dataset_path):
             dataset = load_from_disk(args.dataset_path)['train']
         else:
-            dataset = load_dataset(args.dataset_path)['train']
+            # Try loading with local cache first to avoid repeated downloads
+            local_cache = os.path.join('.cache_datasets', args.dataset_path.replace('/', '_'))
+            if os.path.isdir(local_cache):
+                print(f"[INFO] Loading dataset from local cache: {local_cache}")
+                dataset = load_from_disk(local_cache)
+            else:
+                print(f"[INFO] Downloading dataset: {args.dataset_path}")
+                dataset = load_dataset(args.dataset_path)['train']
+                # Save to local cache for future runs
+                os.makedirs(os.path.dirname(local_cache), exist_ok=True)
+                try:
+                    dataset.save_to_disk(local_cache)
+                    print(f"[INFO] Dataset cached to: {local_cache}")
+                except Exception as e:
+                    print(f"[WARN] Failed to cache dataset: {e}")
         if 'Prompt' in dataset.column_names:
             prompt_key = 'Prompt'
         elif 'prompt' in dataset.column_names:
