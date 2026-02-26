@@ -70,6 +70,11 @@ def main(args):
     args.model_path = resolve_model_path(args.model_path)
     scheduler = get_scheduler(args.scheduler, args.model_path)
 
+    # Always create a DDIM scheduler for inversion (DDIM inversion requires DDIM math)
+    ddim_scheduler_for_inversion = DDIMScheduler.from_pretrained(
+        args.model_path, subfolder='scheduler'
+    )
+
     from_pretrained_kwargs = dict(
         scheduler=scheduler,
         torch_dtype=torch.float16,
@@ -82,6 +87,10 @@ def main(args):
     )
     pipe.safety_checker = None
     pipe = pipe.to(device)
+
+    # Store the generation scheduler and the DDIM inversion scheduler
+    generation_scheduler = pipe.scheduler
+    inversion_scheduler = ddim_scheduler_for_inversion
 
     # Load LoRA weights if specified (for failure case testing)
     if args.lora_path is not None:
@@ -317,6 +326,10 @@ def main(args):
         if args.lora_path is not None and args.lora_extract_mismatch:
             pipe.unload_lora_weights()
 
+        # Swap to DDIM scheduler for inversion (DDIM inversion always needs DDIM math,
+        # regardless of which scheduler was used for generation)
+        pipe.scheduler = inversion_scheduler
+
         image_latents_w = pipe.get_image_latents(image_w_distortion, sample=False)
         reversed_latents_w = pipe.forward_diffusion(
             latents=image_latents_w,
@@ -324,6 +337,9 @@ def main(args):
             guidance_scale=1,
             num_inference_steps=args.num_inversion_steps,
         )
+
+        # Swap back to generation scheduler for next iteration
+        pipe.scheduler = generation_scheduler
 
         # Reload LoRA if we unloaded it
         if args.lora_path is not None and args.lora_extract_mismatch:

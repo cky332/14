@@ -1,0 +1,121 @@
+[
+  {
+    "name": "few_steps_1_matched",
+    "category": "few_steps",
+    "mean_bit_acc": 1.0,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "few_steps_2_matched",
+    "category": "few_steps",
+    "mean_bit_acc": 0.983,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "few_steps_4_matched",
+    "category": "few_steps",
+    "mean_bit_acc": 0.9999,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "few_steps_8_matched",
+    "category": "few_steps",
+    "mean_bit_acc": 0.9971,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "few_steps_10_matched",
+    "category": "few_steps",
+    "mean_bit_acc": 0.9997,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "few_steps_25_matched",
+    "category": "few_steps",
+    "mean_bit_acc": 1.0,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "few_steps_50_matched",
+    "category": "few_steps",
+    "mean_bit_acc": 0.9995,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "scheduler_pndm",
+    "category": "stochastic_sampler",
+    "mean_bit_acc": 1.0,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "scheduler_ddim",
+    "category": "stochastic_sampler",
+    "mean_bit_acc": 1.0,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "scheduler_dpm",
+    "category": "stochastic_sampler",
+    "mean_bit_acc": 0.9993,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "img2img_strength_0.1",
+    "category": "img2img",
+    "mean_bit_acc": 0.9309,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "img2img_strength_0.3",
+    "category": "img2img",
+    "mean_bit_acc": 0.9793,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "img2img_strength_0.5",
+    "category": "img2img",
+    "mean_bit_acc": 0.9904,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "img2img_strength_0.7",
+    "category": "img2img",
+    "mean_bit_acc": 0.9971,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "img2img_strength_0.9",
+    "category": "img2img",
+    "mean_bit_acc": 0.9984,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "img2img_strength_1.0",
+    "category": "img2img",
+    "mean_bit_acc": 0.9992,
+    "returncode": 0,
+    "note": "seeded from previous run"
+  },
+  {
+    "name": "inpainting_mask_0.1",
+    "category": "inpainting",
+    "mean_bit_acc": 0.683,
+    "returncode": 0,
+    "note": "seeded from previous run - DEGRADED failure case"
+  }
+]

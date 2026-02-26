@@ -393,6 +393,33 @@ TEST_REGISTRY = {
 }
 
 
+def load_existing_results(results_file):
+    """Load existing results from a previous run for resume support."""
+    if os.path.isfile(results_file):
+        try:
+            with open(results_file, 'r') as f:
+                results = json.load(f)
+            # Build a dict of successful results keyed by experiment name
+            successful = {}
+            for r in results:
+                name = r.get('name', '')
+                returncode = r.get('returncode', -1)
+                has_metrics = 'mean_bit_acc' in r
+                if returncode == 0 and has_metrics:
+                    successful[name] = r
+            return successful, results
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"[WARN] Failed to load existing results: {e}")
+    return {}, []
+
+
+def save_results_incremental(results_file, all_results):
+    """Save results after each experiment for crash recovery."""
+    os.makedirs(os.path.dirname(results_file) if os.path.dirname(results_file) else '.', exist_ok=True)
+    with open(results_file, 'w') as f:
+        json.dump(all_results, f, indent=2)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Gaussian Shading Failure Case Test Framework',
@@ -410,6 +437,10 @@ def main():
     parser.add_argument('--revision', default=None)
     parser.add_argument('--dry_run', action='store_true',
                         help='Print commands without executing')
+    parser.add_argument('--resume', action='store_true',
+                        help='Resume from previous run, skipping successful experiments')
+    parser.add_argument('--results_file', default='./failure_case_results/results.json',
+                        help='Persistent results file for resume support')
 
     parser.add_argument('--dataset_path', default='Gustavosta/Stable-Diffusion-Prompts',
                         help='Dataset path (will be pre-cached before experiments)')
@@ -434,11 +465,21 @@ def main():
     else:
         print(f"[INFO] Dataset already cached at: {local_cache}")
 
-    # Create results directory
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    results_dir = os.path.join(args.output_path, f'run_{timestamp}')
+    # Create results directory (use a fixed directory for logs, not timestamped)
+    results_dir = os.path.join(args.output_path, 'logs')
     os.makedirs(results_dir, exist_ok=True)
-    args.output_path = results_dir + '/'
+
+    # Load existing results for resume support
+    existing_successful, existing_results = load_existing_results(args.results_file)
+    if args.resume and existing_successful:
+        print(f"[RESUME] Found {len(existing_successful)} successful experiments from previous run")
+    elif args.resume:
+        print(f"[RESUME] No previous results found at {args.results_file}, running all experiments")
+
+    # We need a temporary output_path for the subprocess (it uses this for metric files)
+    subprocess_output = os.path.join(args.output_path, 'metric_files/')
+    os.makedirs(subprocess_output, exist_ok=True)
+    args.output_path = subprocess_output
 
     # Determine which tests to run
     if args.test == 'all':
@@ -458,30 +499,63 @@ def main():
         for name, cmd in experiments:
             all_experiments.append((test_name, name, cmd))
 
+    # Filter out already-successful experiments if resuming
+    experiments_to_run = []
+    skipped_count = 0
+    for test_name, name, cmd in all_experiments:
+        if args.resume and name in existing_successful:
+            skipped_count += 1
+        else:
+            experiments_to_run.append((test_name, name, cmd))
+
+    total_all = len(all_experiments)
+    total_run = len(experiments_to_run)
+
     print(f"\n{'#'*70}")
     print(f"# Gaussian Shading Failure Case Test Framework")
-    print(f"# Total experiments: {len(all_experiments)}")
+    print(f"# Total experiments: {total_all}")
+    if args.resume:
+        print(f"# Skipped (already successful): {skipped_count}")
+        print(f"# Experiments to run: {total_run}")
     print(f"# Tests: {', '.join(tests_to_run)}")
     print(f"# Images per experiment: {args.num}")
-    print(f"# Results directory: {results_dir}")
+    print(f"# Results file: {args.results_file}")
     print(f"{'#'*70}")
 
     if args.dry_run:
         print("\n[DRY RUN] Commands that would be executed:\n")
-        for test_name, name, cmd in all_experiments:
+        for test_name, name, cmd in experiments_to_run:
             print(f"  [{test_name}] {name}:")
             print(f"    python {' '.join(cmd)}")
+        if args.resume and existing_successful:
+            print(f"\n[DRY RUN] Would skip {skipped_count} already-successful experiments:")
+            for name in existing_successful:
+                acc = existing_successful[name].get('mean_bit_acc', -1)
+                print(f"    {name}: bit_acc={acc:.4f}")
         return
 
-    # Run experiments
-    all_results = []
-    total = len(all_experiments)
+    # Start with existing results (keep all previous results, we'll update/add)
+    all_results = list(existing_results) if args.resume else []
+    # Track names already in results to avoid duplicates
+    result_names = {r.get('name', '') for r in all_results}
 
-    for idx, (test_name, name, cmd) in enumerate(all_experiments):
-        print(f"\n[{idx+1}/{total}] Category: {test_name}")
+    # Run experiments
+    for idx, (test_name, name, cmd) in enumerate(experiments_to_run):
+        print(f"\n[{idx+1}/{total_run}] Category: {test_name}")
         metrics = run_experiment(name, cmd, results_dir)
         metrics['category'] = test_name
-        all_results.append(metrics)
+        metrics['timestamp'] = datetime.now().isoformat()
+
+        # Update or append
+        if name in result_names:
+            # Replace existing failed result
+            all_results = [r if r.get('name') != name else metrics for r in all_results]
+        else:
+            all_results.append(metrics)
+            result_names.add(name)
+
+        # Save after each experiment (incremental save for crash recovery)
+        save_results_incremental(args.results_file, all_results)
 
         # Print quick summary
         if 'mean_bit_acc' in metrics:
@@ -489,28 +563,26 @@ def main():
             status = "PASS" if acc >= 0.8 else "FAIL" if acc < 0.6 else "DEGRADED"
             print(f"  >> Bit Accuracy: {acc:.4f} [{status}]")
 
-    # Save consolidated results
-    results_file = os.path.join(results_dir, 'all_results.json')
-    with open(results_file, 'w') as f:
-        json.dump(all_results, f, indent=2)
-
-    # Print summary report
+    # Print summary report (includes ALL results: previous + new)
     print(f"\n\n{'#'*70}")
-    print(f"# SUMMARY REPORT")
+    print(f"# SUMMARY REPORT (all experiments)")
     print(f"{'#'*70}")
     print(f"\n{'Category':<25} {'Experiment':<40} {'Bit Acc':>10} {'Status':>10}")
     print(f"{'-'*85}")
 
     failure_cases = []
     degraded_cases = []
+    error_cases = []
 
     for r in all_results:
         name = r.get('name', 'unknown')
         category = r.get('category', 'unknown')
         acc = r.get('mean_bit_acc', -1)
+        returncode = r.get('returncode', -1)
 
-        if acc < 0:
+        if returncode != 0 or acc < 0:
             status = "ERROR"
+            error_cases.append(r)
         elif acc >= 0.9:
             status = "PASS"
         elif acc >= 0.8:
@@ -522,13 +594,17 @@ def main():
             status = "FAIL"
             failure_cases.append(r)
 
-        print(f"{category:<25} {name:<40} {acc:>10.4f} {status:>10}")
+        acc_str = f"{acc:.4f}" if acc >= 0 else "N/A"
+        print(f"{category:<25} {name:<40} {acc_str:>10} {status:>10}")
 
+    total_with_results = sum(1 for r in all_results if r.get('mean_bit_acc', -1) >= 0)
     print(f"\n{'='*70}")
     print(f"Total experiments: {len(all_results)}")
+    print(f"Successful runs: {total_with_results}")
+    print(f"Errors: {len(error_cases)}")
     print(f"Failures (acc < 0.6): {len(failure_cases)}")
     print(f"Degraded (0.6 <= acc < 0.8): {len(degraded_cases)}")
-    print(f"Results saved to: {results_file}")
+    print(f"Results saved to: {args.results_file}")
 
     if failure_cases:
         print(f"\n{'!'*70}")
@@ -543,6 +619,13 @@ def main():
         for r in degraded_cases:
             print(f"    - {r['name']}: bit_acc={r.get('mean_bit_acc', -1):.4f}")
         print(f"{'*'*70}")
+
+    if error_cases:
+        print(f"\n{'~'*70}")
+        print(f"  EXPERIMENTS WITH ERRORS (will be retried on --resume):")
+        for r in error_cases:
+            print(f"    - {r['name']}: returncode={r.get('returncode', 'N/A')}")
+        print(f"{'~'*70}")
 
 
 if __name__ == '__main__':
