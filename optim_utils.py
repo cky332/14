@@ -24,13 +24,23 @@ def get_dataset(args):
             prompt_key = 'caption'
     else:
         if os.path.isdir(args.dataset_path):
-            dataset = load_from_disk(args.dataset_path)['train']
+            loaded = load_from_disk(args.dataset_path)
+            # load_from_disk may return Dataset or DatasetDict
+            if hasattr(loaded, 'column_names') and isinstance(loaded.column_names, list):
+                # It's a Dataset directly
+                dataset = loaded
+            else:
+                # It's a DatasetDict, get 'train' split
+                dataset = loaded['train']
         else:
             # Try loading with local cache first to avoid repeated downloads
             local_cache = os.path.join('.cache_datasets', args.dataset_path.replace('/', '_'))
             if os.path.isdir(local_cache):
                 print(f"[INFO] Loading dataset from local cache: {local_cache}")
                 dataset = load_from_disk(local_cache)
+                # load_from_disk may return Dataset or DatasetDict
+                if not (hasattr(dataset, 'column_names') and isinstance(dataset.column_names, list)):
+                    dataset = dataset['train']
             else:
                 print(f"[INFO] Downloading dataset: {args.dataset_path}")
                 dataset = load_dataset(args.dataset_path)['train']
