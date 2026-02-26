@@ -179,11 +179,14 @@ class InversableStableDiffusionPipeline(ModifiedStableDiffusionPipeline):
             
             # ddim
             alpha_prod_t = self.scheduler.alphas_cumprod[t]
-            alpha_prod_t_prev = (
-                self.scheduler.alphas_cumprod[prev_timestep]
-                if prev_timestep >= 0
-                else self.scheduler.final_alpha_cumprod
-            )
+            if prev_timestep >= 0:
+                alpha_prod_t_prev = self.scheduler.alphas_cumprod[prev_timestep]
+            else:
+                alpha_prod_t_prev = (
+                    self.scheduler.final_alpha_cumprod
+                    if hasattr(self.scheduler, 'final_alpha_cumprod')
+                    else torch.tensor(1.0)
+                )
             if reverse_process:
                 alpha_prod_t, alpha_prod_t_prev = alpha_prod_t_prev, alpha_prod_t
             latents = backward_ddim(
