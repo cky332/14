@@ -412,7 +412,6 @@ def test_dataset_sensitivity(args):
         cmd = cmd_filtered + ['--dataset_path', ds_path, '--per_image_log']
         # Override num if specified (e.g., edge cases have fewer prompts)
         if num_override is not None:
-            # Replace --num in the command
             cmd_num = []
             skip_num = False
             for a in cmd:

@@ -79,15 +79,29 @@ def main(args):
     from_pretrained_kwargs = dict(
         scheduler=scheduler,
         torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
     )
     if args.revision:
         from_pretrained_kwargs['revision'] = args.revision
+
+    # Clear any leftover GPU memory before loading
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     pipe = InversableStableDiffusionPipeline.from_pretrained(
             args.model_path,
             **from_pretrained_kwargs,
     )
     pipe.safety_checker = None
     pipe = pipe.to(device)
+
+    # Enable memory-efficient attention to reduce VRAM usage
+    try:
+        pipe.enable_xformers_memory_efficient_attention()
+        print("[INFO] Using xformers memory-efficient attention")
+    except Exception:
+        pipe.enable_attention_slicing()
+        print("[INFO] Using attention slicing (xformers not available)")
 
     # Store the generation scheduler and the DDIM inversion scheduler
     generation_scheduler = pipe.scheduler
