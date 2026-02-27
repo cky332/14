@@ -376,6 +376,59 @@ def test_new_distortions(args):
     return experiments
 
 
+def test_dataset_sensitivity(args):
+    """Test 10: Dataset sensitivity - different prompt distributions.
+
+    Hypothesis: The watermark's bit accuracy may depend on the content/style
+    of the generated image. Different prompt datasets produce different image
+    distributions, which may reveal content-dependent fragility in DDIM inversion.
+    The paper only tests on Gustavosta/Stable-Diffusion-Prompts (curated SD prompts).
+    """
+    experiments = []
+    base = get_common_args(args)
+
+    # Datasets to test: (name, path, num_images_override_or_None)
+    datasets = [
+        ('baseline_gustavosta', 'Gustavosta/Stable-Diffusion-Prompts', None),
+        ('parti_prompts', 'nateraw/parti-prompts', None),
+        ('diffusiondb', 'poloclub/diffusiondb', None),
+        ('drawbench', 'sayakpaul/drawbench', None),
+        ('edge_cases', './edge_case_prompts.json', 50),
+    ]
+
+    for ds_name, ds_path, num_override in datasets:
+        name = f"dataset_{ds_name}"
+        # Build command: remove existing --dataset_path from base, add new one
+        cmd_filtered = []
+        skip_next = False
+        for arg in base:
+            if skip_next:
+                skip_next = False
+                continue
+            if arg == '--dataset_path':
+                skip_next = True
+                continue
+            cmd_filtered.append(arg)
+        cmd = cmd_filtered + ['--dataset_path', ds_path, '--per_image_log']
+        # Override num if specified (e.g., edge cases have fewer prompts)
+        if num_override is not None:
+            # Replace --num in the command
+            cmd_num = []
+            skip_num = False
+            for a in cmd:
+                if skip_num:
+                    skip_num = False
+                    continue
+                if a == '--num':
+                    skip_num = True
+                    continue
+                cmd_num.append(a)
+            cmd = cmd_num + ['--num', str(num_override)]
+        experiments.append((name, cmd))
+
+    return experiments
+
+
 # ============================================================
 # Test Registry
 # ============================================================
@@ -390,6 +443,7 @@ TEST_REGISTRY = {
     'guidance_scale': test_guidance_scale_extremes,
     'combined_attacks': test_combined_attacks,
     'new_distortions': test_new_distortions,
+    'dataset_sensitivity': test_dataset_sensitivity,
 }
 
 

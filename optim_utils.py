@@ -14,6 +14,11 @@ def read_json(filename: str) -> Mapping[str, Any]:
 
 
 def get_dataset(args):
+    """Load dataset from various sources.
+
+    Supports: HuggingFace datasets, local directories (saved datasets),
+    local JSON files (list of dicts with 'prompt' key), COCO metadata, LAION.
+    """
     if 'laion' in args.dataset_path:
         dataset = load_dataset(args.dataset)['train']
         prompt_key = 'TEXT'
@@ -22,6 +27,14 @@ def get_dataset(args):
             dataset = json.load(f)
             dataset = dataset['annotations']
             prompt_key = 'caption'
+    elif args.dataset_path.endswith('.json'):
+        # Local JSON file: expects [{"prompt": "...", ...}, ...]
+        with open(args.dataset_path) as f:
+            data = json.load(f)
+        prompt_key = 'prompt'
+        # Wrap as list-of-dicts (already is), compatible with dataset[i][key] access
+        dataset = data
+        print(f"[INFO] Loaded {len(dataset)} prompts from JSON: {args.dataset_path}")
     else:
         if os.path.isdir(args.dataset_path):
             loaded = load_from_disk(args.dataset_path)
@@ -43,7 +56,19 @@ def get_dataset(args):
                     dataset = dataset['train']
             else:
                 print(f"[INFO] Downloading dataset: {args.dataset_path}")
-                dataset = load_dataset(args.dataset_path)['train']
+                # Some datasets (like DiffusionDB) need a specific subset/split
+                load_kwargs = {}
+                if 'diffusiondb' in args.dataset_path.lower():
+                    load_kwargs['name'] = 'large_random_1k'
+                dataset_dict = load_dataset(args.dataset_path, **load_kwargs)
+                # Get the appropriate split
+                if 'train' in dataset_dict:
+                    dataset = dataset_dict['train']
+                else:
+                    # Some datasets only have 'test' or other splits
+                    first_split = list(dataset_dict.keys())[0]
+                    dataset = dataset_dict[first_split]
+                    print(f"[INFO] Using split '{first_split}' (no 'train' split found)")
                 # Save to local cache for future runs
                 os.makedirs(os.path.dirname(local_cache), exist_ok=True)
                 try:
@@ -51,15 +76,23 @@ def get_dataset(args):
                     print(f"[INFO] Dataset cached to: {local_cache}")
                 except Exception as e:
                     print(f"[WARN] Failed to cache dataset: {e}")
-        if 'Prompt' in dataset.column_names:
-            prompt_key = 'Prompt'
-        elif 'prompt' in dataset.column_names:
-            prompt_key = 'prompt'
-        elif 'text' in dataset.column_names:
-            prompt_key = 'text'
-        else:
-            raise KeyError(f"Cannot find prompt column. Available columns: {dataset.column_names}")
+
+        # Auto-detect prompt column name
+        col_names = dataset.column_names if hasattr(dataset, 'column_names') else []
+        prompt_key = _detect_prompt_column(col_names)
+
     return dataset, prompt_key
+
+
+def _detect_prompt_column(column_names):
+    """Auto-detect the prompt column name from a dataset."""
+    # Priority order for prompt column detection
+    candidates = ['Prompt', 'prompt', 'Prompts', 'prompts',
+                   'TEXT', 'text', 'caption', 'Caption']
+    for c in candidates:
+        if c in column_names:
+            return c
+    raise KeyError(f"Cannot find prompt column. Available columns: {column_names}")
 
 
 def save_metrics(args, tpr_detection, tpr_traceability, acc, clip_scores):

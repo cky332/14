@@ -214,6 +214,43 @@ for ANGLE in 1 5 10 30 45 90; do
         --output_path ${OUTPUT}new_distortions/ --chacha
 done
 
+# ==============================================================================
+# Test 10: Dataset Sensitivity (different prompt distributions)
+# Expected: Some datasets/prompt types may degrade bit accuracy
+# ==============================================================================
+echo ""
+echo "=== Test 10: Dataset Sensitivity ==="
+
+echo "  Testing baseline (Gustavosta/Stable-Diffusion-Prompts)..."
+python run_gaussian_shading.py --num 200 --model_path $MODEL --dataset_path $DATASET \
+    --per_image_log \
+    --output_path ${OUTPUT}dataset_baseline/ --chacha
+
+echo "  Testing PartiPrompts (diverse categories)..."
+python run_gaussian_shading.py --num 200 --model_path $MODEL \
+    --dataset_path nateraw/parti-prompts --per_image_log \
+    --output_path ${OUTPUT}dataset_parti/ --chacha
+
+echo "  Testing DiffusionDB (real user prompts, random 1k subset)..."
+python run_gaussian_shading.py --num 200 --model_path $MODEL \
+    --dataset_path poloclub/diffusiondb --per_image_log \
+    --output_path ${OUTPUT}dataset_diffusiondb/ --chacha
+
+echo "  Testing DrawBench (compositional reasoning)..."
+python run_gaussian_shading.py --num 200 --model_path $MODEL \
+    --dataset_path sayakpaul/drawbench --per_image_log \
+    --output_path ${OUTPUT}dataset_drawbench/ --chacha
+
+echo "  Testing edge case prompts (hand-crafted stress tests)..."
+python run_gaussian_shading.py --num 50 --model_path $MODEL \
+    --dataset_path ./edge_case_prompts.json --per_image_log \
+    --output_path ${OUTPUT}dataset_edge_cases/ --chacha
+
+echo ""
+echo "  Analyzing results across datasets..."
+python analyze_dataset_results.py --log_dir ${OUTPUT} \
+    --output_csv ${OUTPUT}dataset_sensitivity_summary.csv
+
 echo ""
 echo "========================================"
 echo "All failure case tests completed!"
