@@ -117,5 +117,45 @@
     "mean_bit_acc": 0.683,
     "returncode": 0,
     "note": "seeded from previous run - DEGRADED failure case"
+  },
+  {
+    "name": "dataset_baseline_gustavosta",
+    "category": "dataset_sensitivity",
+    "mean_bit_acc": 1.0,
+    "returncode": 0,
+    "note": "manually run result",
+    "timestamp": "2026-02-27T14:26:49.806574"
+  },
+  {
+    "name": "dataset_parti_prompts",
+    "category": "dataset_sensitivity",
+    "mean_bit_acc": 1.0,
+    "returncode": 0,
+    "note": "manually run result",
+    "timestamp": "2026-02-27T14:26:49.806714"
+  },
+  {
+    "name": "dataset_diffusiondb",
+    "category": "dataset_sensitivity",
+    "mean_bit_acc": 1.0,
+    "returncode": 0,
+    "note": "manually run result",
+    "timestamp": "2026-02-27T14:26:49.806743"
+  },
+  {
+    "name": "dataset_drawbench",
+    "category": "dataset_sensitivity",
+    "mean_bit_acc": 0.9999,
+    "returncode": 0,
+    "note": "manually run result",
+    "timestamp": "2026-02-27T14:26:49.806767"
+  },
+  {
+    "name": "dataset_edge_cases",
+    "category": "dataset_sensitivity",
+    "mean_bit_acc": 0.9981,
+    "returncode": 0,
+    "note": "manually run result",
+    "timestamp": "2026-02-27T14:26:49.806793"
   }
 ]
