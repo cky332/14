@@ -1,0 +1,206 @@
+[
+  {
+    "prompt": "",
+    "category": "minimal"
+  },
+  {
+    "prompt": "a",
+    "category": "minimal"
+  },
+  {
+    "prompt": "photo",
+    "category": "minimal"
+  },
+  {
+    "prompt": "thing",
+    "category": "minimal"
+  },
+  {
+    "prompt": ".",
+    "category": "minimal"
+  },
+  {
+    "prompt": "A stunning highly detailed photograph of a majestic snow-capped mountain range at golden hour, with dramatic clouds rolling through the valleys below, crystal clear alpine lake in the foreground reflecting the warm sunlight, ancient pine trees framing the scene on both sides, a small wooden cabin nestled among wildflowers, birds flying in formation across the sky, volumetric lighting casting god rays through the clouds, shot on Hasselblad medium format camera, 8k resolution, hyper-realistic, award-winning National Geographic style photography, cinematic composition, rule of thirds, leading lines, dramatic shadows, film grain, bokeh in the background, tilt-shift effect on the foreground flowers, HDR processing, deep depth of field, panoramic vista, breathtaking natural beauty captured at the perfect moment during the autumn season with leaves changing colors from green to gold to crimson red",
+    "category": "very_long"
+  },
+  {
+    "prompt": "An extraordinarily complex and highly detailed digital painting depicting a sprawling fantasy cityscape built upon the backs of enormous ancient sea turtles swimming through a vast cosmic ocean filled with nebulae and distant galaxies, the city features towering crystal spires that refract prismatic light, interconnected bridges of woven starlight spanning between turtle-borne districts, floating gardens with bioluminescent plants hovering above coral-encrusted rooftops, waterfalls cascading from the turtle shells into the cosmic void below creating streams of liquid light, tiny airships powered by captured lightning buzzing between the buildings, street markets selling exotic interdimensional goods, scholars studying cosmic maps projected as holograms, children playing with tamed miniature dragons, an elder wizard channeling energy from the stars to power the city barriers, mysterious fog rolling in from the edge of reality where physics breaks down, painted in the style of a collaboration between Studio Ghibli and Roger Dean with influences from Art Nouveau architecture and cyberpunk aesthetics, masterful use of complementary color palettes featuring deep ocean blues against warm amber glows, incredibly intricate linework visible at every zoom level, 16k ultra high definition rendering",
+    "category": "very_long"
+  },
+  {
+    "prompt": "A completely black image, absolute void, pure darkness, no light whatsoever, pitch black, the absence of all color and light",
+    "category": "dark"
+  },
+  {
+    "prompt": "A very dark photograph taken in near-total darkness, barely visible shadows, extremely underexposed, ISO 100, closed aperture, nighttime with no moon",
+    "category": "dark"
+  },
+  {
+    "prompt": "Deep dark cave interior with no light source, absolute blackness, underground void",
+    "category": "dark"
+  },
+  {
+    "prompt": "A black cat in a dark coal mine at midnight during a power outage, no stars, no moon, pure shadow",
+    "category": "dark"
+  },
+  {
+    "prompt": "The bottom of the Mariana Trench, no sunlight penetration, abyssal darkness, 11000 meters deep",
+    "category": "dark"
+  },
+  {
+    "prompt": "Pure white background, completely overexposed photograph, maximum brightness, blinding light",
+    "category": "bright"
+  },
+  {
+    "prompt": "Staring directly into the sun, nuclear flash, extreme overexposure, completely washed out, pure white",
+    "category": "bright"
+  },
+  {
+    "prompt": "A white cat on white snow under a white sky, white on white on white, high key photography pushed to extreme",
+    "category": "bright"
+  },
+  {
+    "prompt": "Hospital fluorescent lighting at maximum brightness, sterile white walls, white floor, white ceiling, clinical white",
+    "category": "bright"
+  },
+  {
+    "prompt": "Solid blue color, flat, no texture, no objects, no gradient, uniform color fill",
+    "category": "uniform"
+  },
+  {
+    "prompt": "Plain gray background, nothing else, solid neutral gray, RGB 128 128 128",
+    "category": "uniform"
+  },
+  {
+    "prompt": "Solid red rectangle, no variation, flat matte color, no shadows, no highlights",
+    "category": "uniform"
+  },
+  {
+    "prompt": "A perfectly smooth gradient from pure black on the left to pure white on the right, nothing else",
+    "category": "uniform"
+  },
+  {
+    "prompt": "Extremely detailed fractal pattern, infinite zoom, Mandelbrot set visualization, intricate mathematical shapes at every scale",
+    "category": "high_frequency"
+  },
+  {
+    "prompt": "Dense crowd of thousands of people in a stadium, every individual face visible and unique, ultra high resolution",
+    "category": "high_frequency"
+  },
+  {
+    "prompt": "Microscopic view of woven silk fabric showing individual thread crossings, extreme macro photography, every fiber visible",
+    "category": "high_frequency"
+  },
+  {
+    "prompt": "Aerial photograph of a dense city grid with thousands of buildings, cars, and people all individually rendered in sharp detail",
+    "category": "high_frequency"
+  },
+  {
+    "prompt": "A field of grass with every individual blade of grass sharply in focus, dew drops on each blade, 100 megapixel resolution",
+    "category": "high_frequency"
+  },
+  {
+    "prompt": "TV static noise, random black and white pixels, white noise pattern, analog television interference",
+    "category": "high_frequency"
+  },
+  {
+    "prompt": "A sign that reads 'Hello World' in clear, legible text, sans-serif font, white background",
+    "category": "text_rendering"
+  },
+  {
+    "prompt": "Newspaper front page with headline 'BREAKING NEWS: Scientists Discover New Element' in readable 72pt font",
+    "category": "text_rendering"
+  },
+  {
+    "prompt": "A blackboard covered in complex mathematical equations, clearly readable formulas, chalk on black",
+    "category": "text_rendering"
+  },
+  {
+    "prompt": "Restaurant menu board with 10 items listed with prices, each item clearly readable",
+    "category": "text_rendering"
+  },
+  {
+    "prompt": "A book page with several paragraphs of readable English text, Times New Roman font, high resolution",
+    "category": "text_rendering"
+  },
+  {
+    "prompt": "Abstract expressionism, chaotic dripping paint, Jackson Pollock style, random color splatters on canvas",
+    "category": "abstract"
+  },
+  {
+    "prompt": "Glitch art, digital corruption artifacts, pixel sorting, databending, VHS tracking errors, chromatic aberration",
+    "category": "abstract"
+  },
+  {
+    "prompt": "Suprematist composition, geometric shapes floating in void, Kazimir Malevich style, minimal colors",
+    "category": "abstract"
+  },
+  {
+    "prompt": "Psychedelic fractal art, impossible colors, DMT visual experience, kaleidoscopic patterns, non-Euclidean geometry",
+    "category": "abstract"
+  },
+  {
+    "prompt": "Pure abstract noise, no recognizable objects or patterns, random visual chaos, generated static",
+    "category": "abstract"
+  },
+  {
+    "prompt": "Anatomical medical illustration of the human heart, detailed cross-section, textbook style, labeled diagram",
+    "category": "medical"
+  },
+  {
+    "prompt": "Classical Renaissance painting, Botticelli style, mythological scene with figures, museum quality reproduction",
+    "category": "medical"
+  },
+  {
+    "prompt": "Medical X-ray image of a human chest, ribs and spine visible, clinical radiograph style",
+    "category": "medical"
+  },
+  {
+    "prompt": "A perfectly symmetrical human face, completely centered, neutral expression, passport photo style",
+    "category": "faces"
+  },
+  {
+    "prompt": "Close-up portrait of a person with unusual features: heterochromia, vitiligo patterns, unique bone structure",
+    "category": "faces"
+  },
+  {
+    "prompt": "Ten different human faces arranged in a 2x5 grid, each with distinct ethnicity and age, portrait style",
+    "category": "faces"
+  },
+  {
+    "prompt": "Satellite photograph of Earth from space, showing continents and ocean, NASA style, Blue Marble",
+    "category": "photorealistic"
+  },
+  {
+    "prompt": "A glass of water on a wooden table, photorealistic, nothing else in the scene, simple still life",
+    "category": "photorealistic"
+  },
+  {
+    "prompt": "Underwater photograph of a coral reef, tropical fish, crystal clear water, natural lighting, marine biology",
+    "category": "photorealistic"
+  },
+  {
+    "prompt": "Anime girl with large eyes, pink hair, sailor uniform, cherry blossom background, manga style illustration",
+    "category": "illustration"
+  },
+  {
+    "prompt": "Children's book illustration, simple shapes, primary colors, cute cartoon animal, flat design",
+    "category": "illustration"
+  },
+  {
+    "prompt": "Technical blueprint drawing, engineering schematic, white lines on blue background, precise measurements",
+    "category": "illustration"
+  },
+  {
+    "prompt": "An image that is half completely black and half completely white, split vertically down the middle, sharp edge",
+    "category": "extreme_contrast"
+  },
+  {
+    "prompt": "Extreme HDR photograph with impossible dynamic range, simultaneously showing bright sun and dark shadows with full detail",
+    "category": "extreme_contrast"
+  },
+  {
+    "prompt": "Checkerboard pattern alternating pure black and pure white squares, optical illusion, high contrast grid",
+    "category": "extreme_contrast"
+  }
+]

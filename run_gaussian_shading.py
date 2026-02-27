@@ -1,5 +1,6 @@
 import argparse
 import copy
+import json
 from tqdm import tqdm
 import torch
 import numpy as np
@@ -151,6 +152,13 @@ def main(args):
     # We generate a normal image first, then use it as source for img2img
     img_height = args.image_length
     img_width = args.image_width if args.image_width else args.image_length
+
+    # Per-image log file (JSONL format) for dataset sensitivity analysis
+    per_image_log_file = None
+    if args.per_image_log:
+        log_path = os.path.join(args.output_path, 'per_image_log.jsonl')
+        per_image_log_file = open(log_path, 'a')
+        print(f"[INFO] Per-image log: {log_path}")
 
     # test
     for i in tqdm(range(args.num)):
@@ -349,6 +357,26 @@ def main(args):
         acc_metric = watermark.eval_watermark(reversed_latents_w)
         acc.append(acc_metric)
 
+        # Per-image logging
+        if per_image_log_file is not None:
+            log_entry = {
+                'idx': i,
+                'seed': seed,
+                'prompt': current_prompt,
+                'prompt_len': len(current_prompt.split()) if current_prompt else 0,
+                'bit_acc': round(acc_metric, 6),
+                'dataset': args.dataset_path,
+            }
+            # Include category if available (e.g., from PartiPrompts or edge_case_prompts)
+            if isinstance(dataset[i], dict) and 'category' in dataset[i]:
+                log_entry['category'] = dataset[i]['category']
+            elif isinstance(dataset[i], dict) and 'Category' in dataset[i]:
+                log_entry['category'] = dataset[i]['Category']
+            elif hasattr(dataset, 'column_names') and 'Category' in dataset.column_names:
+                log_entry['category'] = dataset[i]['Category']
+            per_image_log_file.write(json.dumps(log_entry) + '\n')
+            per_image_log_file.flush()
+
         # CLIP Score
         if args.reference_model is not None:
             socre = measure_similarity([image_w], current_prompt, ref_model,
@@ -358,6 +386,11 @@ def main(args):
         else:
             clip_socre = 0
         clip_scores.append(clip_socre)
+
+    # Close per-image log
+    if per_image_log_file is not None:
+        per_image_log_file.close()
+        print(f"[INFO] Per-image log saved to: {os.path.join(args.output_path, 'per_image_log.jsonl')}")
 
     # tpr metric
     tpr_detection, tpr_traceability = watermark.get_tpr()
@@ -448,6 +481,9 @@ if __name__ == '__main__':
     parser.add_argument('--color_jitter_saturation', default=None, type=float,
                         help='Saturation jitter factor')
 
+    # Per-image logging for dataset sensitivity analysis
+    parser.add_argument('--per_image_log', action='store_true',
+                        help='Write per-image results (prompt, bit_acc, seed) to a JSONL file')
 
     args = parser.parse_args()
 
