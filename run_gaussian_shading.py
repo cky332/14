@@ -480,6 +480,17 @@ if __name__ == '__main__':
                         help='Rotation angle in degrees')
     parser.add_argument('--color_jitter_saturation', default=None, type=float,
                         help='Saturation jitter factor')
+    # Physical attack simulations
+    parser.add_argument('--physical_attack', default=None, type=str,
+                        choices=['print_scan', 'screen_capture', 'perspective'],
+                        help='Physical attack simulation type')
+    parser.add_argument('--physical_severity', default='medium', type=str,
+                        choices=['mild', 'moderate', 'heavy'],
+                        help='Severity level for physical attack simulation')
+    parser.add_argument('--perspective_angle_x', default=5.0, type=float,
+                        help='Perspective tilt angle around X axis (degrees)')
+    parser.add_argument('--perspective_angle_y', default=None, type=float,
+                        help='Perspective tilt angle around Y axis (degrees)')
 
     # Per-image logging for dataset sensitivity analysis
     parser.add_argument('--per_image_log', action='store_true',

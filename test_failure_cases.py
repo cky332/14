@@ -429,6 +429,53 @@ def test_dataset_sensitivity(args):
     return experiments
 
 
+def test_physical_attacks(args):
+    """Test 11: Physical attack simulations (print-scan, screen-camera capture).
+
+    Hypothesis: Physical-world attacks (printing then scanning, photographing a
+    screen) combine multiple degradations simultaneously -- color shifts, blur,
+    noise, perspective distortion, resolution loss, and compression. These
+    compound effects may overwhelm the watermark's robustness even when each
+    individual degradation alone is survivable.
+    """
+    experiments = []
+    base = get_common_args(args)
+
+    # Print-and-scan at three severity levels
+    for severity in ['mild', 'moderate', 'heavy']:
+        name = f"physical_print_scan_{severity}"
+        cmd = base + ['--physical_attack', 'print_scan',
+                      '--physical_severity', severity]
+        experiments.append((name, cmd))
+
+    # Screen-camera capture at three severity levels
+    for severity in ['mild', 'moderate', 'heavy']:
+        name = f"physical_screen_capture_{severity}"
+        cmd = base + ['--physical_attack', 'screen_capture',
+                      '--physical_severity', severity]
+        experiments.append((name, cmd))
+
+    # Perspective-only at varying angles
+    for angle in [1.0, 3.0, 5.0, 10.0, 15.0]:
+        name = f"physical_perspective_{angle}deg"
+        cmd = base + ['--physical_attack', 'perspective',
+                      '--perspective_angle_x', str(angle)]
+        experiments.append((name, cmd))
+
+    # Combined: physical attack + additional digital distortion
+    name = "physical_print_scan_moderate_jpeg50"
+    cmd = base + ['--physical_attack', 'print_scan',
+                  '--physical_severity', 'moderate', '--jpeg_ratio', '50']
+    experiments.append((name, cmd))
+
+    name = "physical_screen_capture_moderate_resize0.5"
+    cmd = base + ['--physical_attack', 'screen_capture',
+                  '--physical_severity', 'moderate', '--resize_ratio', '0.5']
+    experiments.append((name, cmd))
+
+    return experiments
+
+
 # ============================================================
 # Test Registry
 # ============================================================
@@ -444,6 +491,7 @@ TEST_REGISTRY = {
     'combined_attacks': test_combined_attacks,
     'new_distortions': test_new_distortions,
     'dataset_sensitivity': test_dataset_sensitivity,
+    'physical_attacks': test_physical_attacks,
 }
 
 
