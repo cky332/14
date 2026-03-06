@@ -1,8 +1,10 @@
 import torch
 import numpy as np
 from torchvision import transforms
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
 import random
+import math
+import io
 
 
 def set_random_seed(seed=0):
@@ -98,6 +100,176 @@ def regeneration_attack(img, pipe, device, strength=0.5, prompt='',
     return outputs.images[0]
 
 
+def _solve_perspective_coeffs(src_points, dst_points):
+    """Solve for the 8 coefficients of a PIL perspective transform.
+
+    Given 4 source-destination point pairs, solves the system:
+        X = (ax + by + c) / (gx + hy + 1)
+        Y = (dx + ey + f) / (gx + hy + 1)
+    """
+    matrix = []
+    for (x, y), (X, Y) in zip(src_points, dst_points):
+        matrix.append([x, y, 1, 0, 0, 0, -X * x, -X * y])
+        matrix.append([0, 0, 0, x, y, 1, -Y * x, -Y * y])
+    A = np.array(matrix, dtype=np.float64)
+    b = np.array([c for pt in dst_points for c in pt], dtype=np.float64)
+    coeffs = np.linalg.solve(A, b)
+    return tuple(coeffs.tolist())
+
+
+def simulate_perspective(img, angle_x=5.0, angle_y=5.0):
+    """Simulate viewing/photographing an image from a non-perpendicular angle.
+
+    Args:
+        img: PIL Image
+        angle_x: tilt around horizontal axis (degrees)
+        angle_y: tilt around vertical axis (degrees)
+    """
+    w, h = img.size
+    focal = float(w)
+
+    ax = math.radians(angle_x)
+    ay = math.radians(angle_y)
+
+    # Original corners: TL, TR, BR, BL
+    corners = [(0, 0), (w, 0), (w, h), (0, h)]
+
+    # Project each corner through rotation
+    dst = []
+    for x, y in corners:
+        # Center coordinates
+        cx, cy = x - w / 2, y - h / 2
+        # Apply Y-axis rotation
+        xr = cx * math.cos(ay) / (1 - cx * math.sin(ay) / focal)
+        # Apply X-axis rotation
+        yr = cy * math.cos(ax) / (1 - cy * math.sin(ax) / focal)
+        dst.append((xr + w / 2, yr + h / 2))
+
+    coeffs = _solve_perspective_coeffs(dst, corners)
+    return img.transform(img.size, Image.PERSPECTIVE, coeffs, Image.BILINEAR,
+                         fillcolor=(128, 128, 128))
+
+
+def simulate_print_scan(img, severity='medium'):
+    """Simulate print-then-scan pipeline.
+
+    Applies: color depth reduction -> DPI resolution loss -> blur ->
+    brightness/contrast shift -> noise -> perspective -> JPEG compression.
+    """
+    presets = {
+        'mild':     {'depth': 7, 'blur': 0.5, 'noise': 0.01, 'jpeg': 85,
+                     'bright': 0.95, 'contrast': 0.95, 'angle': 0.5, 'dpi': 0.85},
+        'moderate': {'depth': 6, 'blur': 1.0, 'noise': 0.02, 'jpeg': 70,
+                     'bright': 0.90, 'contrast': 0.90, 'angle': 1.0, 'dpi': 0.7},
+        'heavy':    {'depth': 5, 'blur': 2.0, 'noise': 0.04, 'jpeg': 50,
+                     'bright': 0.85, 'contrast': 0.80, 'angle': 2.0, 'dpi': 0.5},
+    }
+    p = presets[severity]
+
+    # 1. Color depth reduction
+    arr = np.array(img)
+    shift = 8 - p['depth']
+    arr = (arr >> shift) << shift
+    img = Image.fromarray(arr)
+
+    # 2. DPI resolution loss
+    orig_size = img.size
+    small = img.resize((int(orig_size[0] * p['dpi']), int(orig_size[1] * p['dpi'])),
+                       Image.BILINEAR)
+    img = small.resize(orig_size, Image.BILINEAR)
+
+    # 3. Gaussian blur (ink spread)
+    img = img.filter(ImageFilter.GaussianBlur(radius=p['blur']))
+
+    # 4. Brightness and contrast shift
+    img = ImageEnhance.Brightness(img).enhance(p['bright'])
+    img = ImageEnhance.Contrast(img).enhance(p['contrast'])
+
+    # 5. Gaussian noise (scanner sensor)
+    arr = np.array(img).astype(np.float64)
+    arr += np.random.normal(0, p['noise'] * 255, arr.shape)
+    img = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
+
+    # 6. Slight perspective (paper misalignment)
+    img = simulate_perspective(img, angle_x=p['angle'], angle_y=p['angle'] * 0.5)
+
+    # 7. JPEG compression (scanner output)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=p['jpeg'])
+    buf.seek(0)
+    img = Image.open(buf).convert('RGB')
+
+    return img
+
+
+def simulate_screen_capture(img, severity='medium'):
+    """Simulate screen-display-then-camera-capture pipeline.
+
+    Applies: gamma mismatch -> color temperature shift -> moire (heavy) ->
+    blur -> resolution loss -> noise -> perspective -> JPEG compression.
+    """
+    presets = {
+        'mild':     {'gamma': 1.1, 'temp': (5, -3, -5), 'blur': 0.3,
+                     'noise': 0.01, 'angle': 0.5, 'scale': 0.9, 'jpeg': 90,
+                     'moire': False},
+        'moderate': {'gamma': 1.3, 'temp': (10, -5, -10), 'blur': 0.8,
+                     'noise': 0.025, 'angle': 2.0, 'scale': 0.75, 'jpeg': 75,
+                     'moire': False},
+        'heavy':    {'gamma': 1.6, 'temp': (20, -8, -15), 'blur': 1.5,
+                     'noise': 0.05, 'angle': 5.0, 'scale': 0.5, 'jpeg': 55,
+                     'moire': True},
+    }
+    p = presets[severity]
+
+    # 1. Gamma correction mismatch
+    arr = np.array(img).astype(np.float64) / 255.0
+    arr = np.power(arr, p['gamma'])
+    arr = (arr * 255).astype(np.uint8)
+
+    # 2. Color temperature shift
+    r_shift, g_shift, b_shift = p['temp']
+    arr[:, :, 0] = np.clip(arr[:, :, 0].astype(np.int16) + r_shift, 0, 255).astype(np.uint8)
+    arr[:, :, 1] = np.clip(arr[:, :, 1].astype(np.int16) + g_shift, 0, 255).astype(np.uint8)
+    arr[:, :, 2] = np.clip(arr[:, :, 2].astype(np.int16) + b_shift, 0, 255).astype(np.uint8)
+
+    # 3. Moire pattern (heavy only)
+    if p['moire']:
+        h, w = arr.shape[:2]
+        x = np.arange(w).reshape(1, -1)
+        y = np.arange(h).reshape(-1, 1)
+        freq = 0.05
+        moire = (np.sin(2 * math.pi * freq * x) *
+                 np.sin(2 * math.pi * freq * y) * 10)
+        arr = np.clip(arr.astype(np.float64) + moire[:, :, np.newaxis], 0, 255).astype(np.uint8)
+
+    img = Image.fromarray(arr)
+
+    # 4. Gaussian blur (camera defocus)
+    img = img.filter(ImageFilter.GaussianBlur(radius=p['blur']))
+
+    # 5. Resolution loss
+    orig_size = img.size
+    small = img.resize((int(orig_size[0] * p['scale']), int(orig_size[1] * p['scale'])),
+                       Image.BILINEAR)
+    img = small.resize(orig_size, Image.BILINEAR)
+
+    # 6. Gaussian noise (camera sensor)
+    arr = np.array(img).astype(np.float64)
+    arr += np.random.normal(0, p['noise'] * 255, arr.shape)
+    img = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
+
+    # 7. Slight perspective (camera angle)
+    img = simulate_perspective(img, angle_x=p['angle'], angle_y=p['angle'] * 0.7)
+
+    # 8. JPEG compression (camera output)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=p['jpeg'])
+    buf.seek(0)
+    img = Image.open(buf).convert('RGB')
+
+    return img
+
+
 def image_distortion(img, seed, args):
 
     if args.jpeg_ratio is not None:
@@ -174,6 +346,18 @@ def image_distortion(img, seed, args):
 
     if hasattr(args, 'color_jitter_saturation') and args.color_jitter_saturation is not None:
         img = transforms.ColorJitter(saturation=args.color_jitter_saturation)(img)
+
+    if hasattr(args, 'physical_attack') and args.physical_attack is not None:
+        severity = getattr(args, 'physical_severity', 'medium')
+        if args.physical_attack == 'print_scan':
+            img = simulate_print_scan(img, severity=severity)
+        elif args.physical_attack == 'screen_capture':
+            img = simulate_screen_capture(img, severity=severity)
+        elif args.physical_attack == 'perspective':
+            angle = getattr(args, 'perspective_angle_x', 5.0)
+            angle_y = getattr(args, 'perspective_angle_y', None)
+            img = simulate_perspective(img, angle_x=angle,
+                                       angle_y=angle_y or angle * 0.7)
 
     return img
 
