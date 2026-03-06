@@ -116,15 +116,15 @@ def save_metrics(args, tpr_detection, tpr_traceability, acc, clip_scores):
         with open(args.output_path + filename, "a") as file:
             file.write('tpr_detection:' + str(tpr_detection / args.num) + '      ' +
                        'tpr_traceability:' + str(tpr_traceability / args.num) + '      ' +
-                       'mean_acc:' + str(mean(acc)) + '      ' + 'std_acc:' + str(stdev(acc)) + '      ' +
-                       'mean_clip_score:' + str(mean(clip_scores)) + '      ' + 'std_clip_score:' + str(stdev(clip_scores)) + '      ' +
+                       'mean_acc:' + str(mean(acc)) + '      ' + 'std_acc:' + str(stdev(acc) if len(acc) >= 2 else 0) + '      ' +
+                       'mean_clip_score:' + str(mean(clip_scores)) + '      ' + 'std_clip_score:' + str(stdev(clip_scores) if len(clip_scores) >= 2 else 0) + '      ' +
                        '\n')
 
     else:
         with open(args.output_path + filename, "a") as file:
             file.write('tpr_detection:' + str(tpr_detection / args.num) + '      ' +
                        'tpr_traceability:' + str(tpr_traceability / args.num) + '      ' +
-                       'mean_acc:' + str(mean(acc)) + '      ' + 'std_acc:' + str(stdev(acc)) + '      ' +
+                       'mean_acc:' + str(mean(acc)) + '      ' + 'std_acc:' + str(stdev(acc) if len(acc) >= 2 else 0) + '      ' +
                        '\n')
 
     return
